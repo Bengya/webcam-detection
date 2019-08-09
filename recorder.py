@@ -1,21 +1,39 @@
 import cv2
 import yoloPredict
 
-video = cv2.VideoCapture(0)
-height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
-width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
-predictor = yoloPredict.Predictor( width, height)
+EXIT_KEY = 'e'
 
-while True:
-    check,frame = video.read()
-    # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+class Detector:
+    def __init__(self):
+        # Create VideoCapture object to use webcam
+        self.camera = cv2.VideoCapture(0)
 
-    cv2.imshow('Capturing', predictor.predict(frame))
-    key = cv2.waitKey(1)
+        # get height and width of webcam, it is important for the darknet
+        height = int(self.camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        width = int(self.camera.get(cv2.CAP_PROP_FRAME_WIDTH))
 
-    if key == ord('q'):
-        break
+        # Create predictor object
+        self.predictor = yoloPredict.Predictor(width, height)
 
+    def run(self):
+        # Infinite loop to stream camera
+        while True:
 
-video.release()
-cv2.destroyAllWindows()
+            # Getting camera image, check is for successful read, frame is the read video frame
+            check, frame = self.camera.read()
+
+            # if the check is successful, the predictted frame is shown
+            if check:
+                predicted_frame = self.predictor.predict(frame)
+                cv2.imshow('Darknet Object Detector', predicted_frame)
+
+            # wait 1ms for key press
+            key = cv2.waitKey(1)
+
+            # if defined exit key was pressed video cycle shall be stopped
+            if key == ord(EXIT_KEY):
+                break
+
+        # dismantle camera object and openCV framework
+        self.camera.release()
+        cv2.destroyAllWindows()

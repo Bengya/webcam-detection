@@ -13,8 +13,10 @@ class Predictor():
 
         self.img_width = w
         self.img_height = h
-
-        self.net = cv2.dnn.readNetFromDarknet(configPath, weightsPath)
+        try:
+            self.net = cv2.dnn.readNetFromDarknet(configPath, weightsPath)
+        except cv2.error:
+            raise FileNotFoundError("Darknet weights might not be added to /config\nYou can download it from https://pjreddie.com/media/files/yolov3.weights")
 
         self.classes = None
         with open(classesPath, 'r') as f:
