@@ -8,34 +8,46 @@ configPath = 'config/yolov3.cfg'
 weightsPath = 'config/yolov3.weights'
 classesPath = 'config/objects.txt'
 
-class Predictor():
+
+class Predictor:
     def __init__(self, w, h):
 
         self.img_width = w
         self.img_height = h
         try:
+            # Initializing the network, configuration and weights needs to be added.
             self.net = cv2.dnn.readNetFromDarknet(configPath, weightsPath)
         except cv2.error:
+            # Weights are not uploaded to version control so it should be downloaded separately
             raise FileNotFoundError("Darknet weights might not be added to /config\nYou can download it from https://pjreddie.com/media/files/yolov3.weights")
 
+        # Prediction classes shall be defined in a .txt then populated in a list
         self.classes = None
         with open(classesPath, 'r') as f:
             self.classes = [line.strip() for line in f.readlines()]
 
+        # Initialize random colors for visualization
         self.colors = np.random.randint(0, 255, size=(len(self.classes), 3), dtype="uint8")
 
     def predict(self, image):
-        ln = self.net.getLayerNames()
-        ln = [ln[i[0] - 1] for i in self.net.getUnconnectedOutLayers()]
+        # Construct output layer name list, which is needed for feeding data through the network
+        layer_names = self.net.getLayerNames()
+        layer_names = [layer_names[i[0] - 1] for i in self.net.getUnconnectedOutLayers()]
 
-        # construct a blob from the input image and then perform a forward
-        # pass of the YOLO object detector, giving us our bounding boxes and
-        # associated probabilities
+        # Construct a blob based on the image we want to feed the network.
+        # The blob involves some image processing and transorfming to a form which is understandable by the network
         blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (self.img_width, self.img_height), swapRB=True, crop=False)
+
+        # Set the blob as the input of the network
         self.net.setInput(blob)
+
         start = time.time()
-        layer_outputs = self.net.forward(ln)
+
+        # Passing the blobs through the network up until the last layers.
+        # It will return the bounding boxes of each category, predefined in classes with the probability.
+        layer_outputs = self.net.forward(layer_names)
         end = time.time()
+
         print("Prediction took: {:.6f} seconds".format(end-start))
         return self.visualize(image, layer_outputs)
 
@@ -48,6 +60,7 @@ class Predictor():
             for detection in output:
                 # extract the class ID and confidence (i.e., probability) of
                 # the current object detection
+                print(detection)
                 scores = detection[5:]
                 class_id = np.argmax(scores)
                 confidence = scores[class_id]
